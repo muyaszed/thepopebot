@@ -88,3 +88,9 @@ If a skill needs an API key, the user should set it up BEFORE the job runs:
 - The value is stored exactly as provided, no transformation needed
 - Also add to `.env` for local development
 - Keys can be rotated later with the same command
+
+**Multi-line secrets** (e.g., JSON service account files): omit the value argument and pipe the file via stdin:
+```bash
+npx thepopebot set-agent-llm-secret GOOGLE_CREDENTIALS < credentials.json
+```
+Avoid `$(cat credentials.json)` — it can break on special characters and newlines.

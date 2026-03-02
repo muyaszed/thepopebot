@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
@@ -22,8 +22,10 @@ export default function CodePage({ session, claudeWorkspaceId }) {
   const wsRef = useRef(null);
   const retryTimer = useRef(null);
   const statusRef = useRef(null);
+  const [connected, setConnected] = useState(false);
   const setStatus = useCallback((color) => {
     if (statusRef.current) statusRef.current.style.backgroundColor = color;
+    setConnected(color === STATUS.connected);
   }, []);
 
   const sendResize = useCallback(() => {
@@ -159,7 +161,26 @@ export default function CodePage({ session, claudeWorkspaceId }) {
         <SidebarInset>
           <div className="flex h-svh flex-col overflow-hidden">
             <ChatHeader workspaceId={claudeWorkspaceId} />
-            <div ref={containerRef} className="mx-4" style={{ flex: 1, minHeight: 0, borderRadius: 6, overflow: 'hidden' }} />
+            <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+              <div ref={containerRef} className="mx-4" style={{ height: '100%', borderRadius: 6, overflow: 'hidden' }} />
+              {!connected && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%', left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  background: 'rgba(255,255,255,0.9)',
+                  color: '#000',
+                  padding: '12px 24px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  zIndex: 10,
+                }}>
+                  Loading...
+                </div>
+              )}
+            </div>
 
             {/* Toolbar */}
             <div

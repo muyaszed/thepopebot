@@ -25,7 +25,7 @@ export function SidebarUserNav({ user, collapsed }) {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton className={cn(collapsed ? 'justify-center' : 'justify-between')}>
+            <SidebarMenuButton className={cn('bg-background text-foreground hover:bg-muted', collapsed ? 'justify-center' : 'justify-between')}>
               <div className={cn('flex items-center overflow-hidden', collapsed ? '' : 'gap-2')}>
                 <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
                   {(user?.email?.[0] || 'U').toUpperCase()}
@@ -44,7 +44,7 @@ export function SidebarUserNav({ user, collapsed }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-56">
             <DropdownMenuItem asChild>
-              <a href="/settings" style={{ textDecoration: 'inherit', color: 'inherit' }}>
+              <a href="/settings" className="flex items-center" style={{ textDecoration: 'inherit', color: 'inherit' }}>
                 <SettingsIcon size={14} />
                 <span className="ml-2">Settings</span>
               </a>
@@ -56,7 +56,7 @@ export function SidebarUserNav({ user, collapsed }) {
               </DropdownMenuItem>
             )}
             <DropdownMenuItem asChild>
-              <a href="https://github.com/stephengpope/thepopebot/issues" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'inherit', color: 'inherit' }}>
+              <a href="https://github.com/stephengpope/thepopebot/issues" target="_blank" rel="noopener noreferrer" className="flex items-center" style={{ textDecoration: 'inherit', color: 'inherit' }}>
                 <BugIcon size={14} />
                 <span className="ml-2">Report Issues</span>
               </a>
