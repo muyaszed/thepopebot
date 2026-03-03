@@ -5,6 +5,8 @@ import { SidebarHistoryItem } from './sidebar-history-item.js';
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu } from './ui/sidebar.js';
 import { useChatNav } from './chat-nav-context.js';
 import { getChats, deleteChat, renameChat, starChat } from '../actions.js';
+import { cn } from '../utils.js';
+import { MessageIcon, CodeIcon } from './icons.js';
 
 function groupChatsByDate(chats) {
   const now = new Date();
@@ -44,9 +46,40 @@ function groupChatsByDate(chats) {
   return groups;
 }
 
+const FILTERS = [
+  { value: 'all', label: 'All', icon: null },
+  { value: 'chat', label: 'Chat', icon: MessageIcon },
+  { value: 'code', label: 'Code', icon: CodeIcon },
+];
+
+function ChatTypeFilter({ filter, setFilter }) {
+  return (
+    <div className="flex items-center gap-0.5 px-2 mb-1">
+      {FILTERS.map(({ value, label, icon: Icon }) => (
+        <button
+          key={value}
+          onClick={() => setFilter(value)}
+          className={cn(
+            'flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors',
+            filter === value
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          {Icon && <Icon size={12} />}
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const isCodeChat = (chat) => Boolean(chat.codeWorkspaceId && chat.containerName);
+
 export function SidebarHistory() {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
   const { activeChatId, navigateToChat } = useChatNav();
 
   const loadChats = async () => {
@@ -104,6 +137,7 @@ export function SidebarHistory() {
     return (
       <SidebarGroup>
         <SidebarGroupContent>
+          <ChatTypeFilter filter={filter} setFilter={setFilter} />
           <div className="flex flex-col gap-2 px-2">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="h-8 animate-pulse rounded-md bg-border/50" />
@@ -126,31 +160,51 @@ export function SidebarHistory() {
     );
   }
 
-  const grouped = groupChatsByDate(chats);
+  const filteredChats = filter === 'all' ? chats
+    : filter === 'code' ? chats.filter(isCodeChat)
+    : chats.filter((c) => !isCodeChat(c));
+  const grouped = groupChatsByDate(filteredChats);
+
+  const hasResults = Object.values(grouped).some((g) => g.length > 0);
 
   return (
     <>
-      {Object.entries(grouped).map(
-        ([label, groupChats]) =>
-          groupChats.length > 0 && (
-            <SidebarGroup key={label}>
-              <SidebarGroupLabel>{label}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {groupChats.map((chat) => (
-                    <SidebarHistoryItem
-                      key={chat.id}
-                      chat={chat}
-                      isActive={chat.id === activeChatId}
-                      onDelete={handleDelete}
-                      onStar={handleStar}
-                      onRename={handleRename}
-                    />
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <ChatTypeFilter filter={filter} setFilter={setFilter} />
+        </SidebarGroupContent>
+      </SidebarGroup>
+      {hasResults ? (
+        Object.entries(grouped).map(
+          ([label, groupChats]) =>
+            groupChats.length > 0 && (
+              <SidebarGroup key={label}>
+                <SidebarGroupLabel>{label}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {groupChats.map((chat) => (
+                      <SidebarHistoryItem
+                        key={chat.id}
+                        chat={chat}
+                        isActive={chat.id === activeChatId}
+                        onDelete={handleDelete}
+                        onStar={handleStar}
+                        onRename={handleRename}
+                      />
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )
+        )
+      ) : (
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <p className="px-4 py-2 text-sm text-muted-foreground">
+              No {filter === 'code' ? 'code' : 'chat'} chats yet.
+            </p>
+          </SidebarGroupContent>
+        </SidebarGroup>
       )}
     </>
   );
