@@ -10,6 +10,7 @@ All tagged `stephengpope/thepopebot:{tag}-{version}`:
 | `pi-coding-agent-job` | Ephemeral | Clones `job/*` branch, installs skill deps, builds system prompt from SOUL.md + JOB_AGENT.md, runs Pi agent, commits results + creates PR |
 | `claude-code-job` | Ephemeral | Same flow as Pi but runs Claude Code CLI with `--dangerously-skip-permissions` |
 | `claude-code-workspace` | Long-lived | Clones repo, runs Claude Code in tmux, serves via ttyd on port 7681 |
+| `cluster-worker` | Ephemeral | Runs Claude Code headlessly for cluster worker tasks — no git clone/merge, workspace bind-mounted |
 
 ## Docker Compose
 

@@ -1,7 +1,0 @@
-services:
-  worker:
-    image: stephengpope/thepopebot:claude-code-headless-${THEPOPEBOT_VERSION:-latest}
-    environment:
-      - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}
-      - GH_TOKEN=${GH_TOKEN:-}
-    network_mode: bridge

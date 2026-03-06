@@ -26,7 +26,7 @@ export default function CodePage({ session, codeWorkspaceId }) {
   const [errorMessage, setErrorMessage] = useState('');
 
   const [tabs, setTabs] = useState([
-    { id: 'claude-code', label: 'Claude Code', type: 'claude' },
+    { id: 'claude-code', label: 'Code', type: 'claude' },
   ]);
   const [activeTabId, setActiveTabId] = useState('claude-code');
   const [creatingShell, setCreatingShell] = useState(false);
@@ -138,22 +138,7 @@ export default function CodePage({ session, codeWorkspaceId }) {
         <AppSidebar user={session.user} />
         <SidebarInset>
           <div className="flex h-svh flex-col overflow-hidden">
-            <div style={{ display: 'flex', alignItems: 'center', paddingRight: 20 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <ChatHeader workspaceId={codeWorkspaceId} />
-              </div>
-              <button
-                onClick={handleOpenCloseDialog}
-                title="Close Session"
-                style={{ width: 22, height: 22, flexShrink: 0 }}
-                className="flex items-center justify-center rounded border-2 border-destructive/40 hover:bg-destructive/10 transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round">
-                  <line x1="4" y1="4" x2="12" y2="12" />
-                  <line x1="12" y1="4" x2="4" y2="12" />
-                </svg>
-              </button>
-            </div>
+            <ChatHeader workspaceId={codeWorkspaceId} />
 
             {/* Tab bar */}
             <div className="flex items-end gap-0 px-4 bg-muted/30 border-b border-border shrink-0 overflow-hidden">

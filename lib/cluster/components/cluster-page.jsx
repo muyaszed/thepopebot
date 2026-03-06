@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { PageLayout } from '../../chat/components/page-layout.js';
 import { PlusIcon, TrashIcon, PencilIcon, CopyIcon, CheckIcon } from '../../chat/components/icons.js';
 import {
-  getCluster, renameCluster, updateClusterSystemPrompt, updateClusterFolders,
+  getCluster, renameCluster, deleteCluster, updateClusterSystemPrompt, updateClusterFolders,
   getClusterRoles, addClusterWorker, assignWorkerRole, renameClusterWorker,
   updateWorkerTriggers, updateWorkerFoldersAction, removeClusterWorker,
-  triggerWorkerManually, startCluster, stopCluster, stopWorker, getClusterStatus,
+  triggerWorkerManually, toggleCluster, stopWorker, getClusterStatus,
 } from '../actions.js';
 import { ConfirmDialog } from '../../chat/components/ui/confirm-dialog.js';
 
@@ -21,6 +21,7 @@ export function ClusterPage({ session, clusterId }) {
   const [workerStatus, setWorkerStatus] = useState({});
   const [clusterBusy, setClusterBusy] = useState(false);
   const [foldersValue, setFoldersValue] = useState('');
+  const [confirmDeleteCluster, setConfirmDeleteCluster] = useState(false);
   const nameRef = useRef(null);
 
   const load = async () => {
@@ -141,15 +142,17 @@ export function ClusterPage({ session, clusterId }) {
     }));
   };
 
-  const handleStartCluster = async () => {
+  const handleToggleCluster = async () => {
     setClusterBusy(true);
     try {
-      await startCluster(clusterId);
+      const result = await toggleCluster(clusterId);
+      if (result.success) {
+        setCluster((prev) => ({ ...prev, enabled: result.enabled }));
+      }
     } catch (err) {
-      console.error('Failed to start cluster:', err);
+      console.error('Failed to toggle cluster:', err);
     } finally {
       setClusterBusy(false);
-      // Refresh status
       try {
         const status = await getClusterStatus(clusterId);
         setWorkerStatus(status);
@@ -157,18 +160,10 @@ export function ClusterPage({ session, clusterId }) {
     }
   };
 
-  const handleStopCluster = async () => {
-    setClusterBusy(true);
-    try {
-      await stopCluster(clusterId);
-    } catch (err) {
-      console.error('Failed to stop cluster:', err);
-    } finally {
-      setClusterBusy(false);
-      try {
-        const status = await getClusterStatus(clusterId);
-        setWorkerStatus(status);
-      } catch {}
+  const handleDeleteCluster = async () => {
+    const { success } = await deleteCluster(clusterId);
+    if (success) {
+      window.location.href = '/clusters/list';
     }
   };
 
@@ -228,31 +223,70 @@ export function ClusterPage({ session, clusterId }) {
           </h1>
         )}
         {!editingName && (
-          <button
-            onClick={() => setEditingName(true)}
-            className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted"
-          >
-            <PencilIcon size={16} />
-          </button>
+          <>
+            <button
+              onClick={() => setEditingName(true)}
+              className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted"
+            >
+              <PencilIcon size={16} />
+            </button>
+            <button
+              onClick={() => setConfirmDeleteCluster(true)}
+              className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-muted"
+              aria-label="Delete cluster"
+            >
+              <TrashIcon size={16} />
+            </button>
+          </>
         )}
       </div>
 
-      {/* Cluster Controls */}
+      <ConfirmDialog
+        open={confirmDeleteCluster}
+        title="Delete cluster?"
+        description="This will permanently delete this cluster and all its workers."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          setConfirmDeleteCluster(false);
+          handleDeleteCluster();
+        }}
+        onCancel={() => setConfirmDeleteCluster(false)}
+      />
+
+      {/* Cluster Toggle */}
       {totalCount > 0 && (
         <div className="flex items-center gap-3 mb-6">
           <button
-            onClick={handleStartCluster}
+            type="button"
+            onClick={handleToggleCluster}
             disabled={clusterBusy}
-            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 group disabled:opacity-50"
+            role="switch"
+            aria-checked={!!cluster.enabled}
+            aria-label="Toggle cluster"
           >
-            {clusterBusy ? 'Starting...' : 'Start Cluster'}
-          </button>
-          <button
-            onClick={handleStopCluster}
-            disabled={clusterBusy}
-            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium border border-input hover:bg-muted disabled:opacity-50"
-          >
-            {clusterBusy ? 'Stopping...' : 'Stop Cluster'}
+            {clusterBusy && (
+              <svg className="animate-spin h-3.5 w-3.5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            )}
+            <span
+              className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ${
+                cluster.enabled ? 'bg-primary' : 'bg-muted-foreground/30'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                  cluster.enabled ? 'translate-x-4' : ''
+                }`}
+              />
+            </span>
+            <span className={`text-sm font-medium transition-colors ${
+              cluster.enabled ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
+            }`}>
+              {cluster.enabled ? 'On' : 'Off'}
+            </span>
           </button>
           <span className="text-sm text-muted-foreground">
             {runningCount}/{totalCount} running
@@ -295,7 +329,7 @@ export function ClusterPage({ session, clusterId }) {
           <h2 className="text-lg font-medium">
             Workers
             <span className="text-sm font-normal text-muted-foreground ml-2">
-              {cluster.workers?.length || 0} {(cluster.workers?.length || 0) === 1 ? 'replica' : 'replicas'}
+              {cluster.workers?.length || 0} {(cluster.workers?.length || 0) === 1 ? 'worker' : 'workers'}
             </span>
           </h2>
           <button
@@ -309,7 +343,7 @@ export function ClusterPage({ session, clusterId }) {
 
         {(!cluster.workers || cluster.workers.length === 0) ? (
           <div className="rounded-md border border-dashed border-border p-8 text-center">
-            <p className="text-sm text-muted-foreground mb-3">No workers yet. Add a worker to define a replica in this cluster.</p>
+            <p className="text-sm text-muted-foreground mb-3">No workers yet. Add a worker to this cluster.</p>
             <button
               onClick={handleAddWorker}
               className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium border border-input hover:bg-muted"
@@ -350,7 +384,8 @@ export function ClusterPage({ session, clusterId }) {
 function WorkerRow({ worker, roles, running, onAssignRole, onRename, onUpdateTriggers, onRemove }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingName, setEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState(worker.name || `Worker ${worker.replicaIndex}`);
+  const shortId = worker.id.replace(/-/g, '').slice(0, 8);
+  const [nameValue, setNameValue] = useState(worker.name || `Worker`);
   const [runningWorker, setRunningWorker] = useState(false);
   const [stoppingWorker, setStoppingWorker] = useState(false);
   const [foldersValue, setFoldersValue] = useState(worker.folders ? worker.folders.join(', ') : '');
@@ -457,8 +492,8 @@ function WorkerRow({ worker, roles, running, onAssignRole, onRename, onUpdateTri
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-xs font-mono font-medium shrink-0">
-          {worker.replicaIndex}
+        <div className="flex items-center justify-center px-2 h-6 rounded bg-muted text-xs font-mono font-medium shrink-0">
+          {shortId}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -471,14 +506,14 @@ function WorkerRow({ worker, roles, running, onAssignRole, onRename, onUpdateTri
                 onChange={(e) => setNameValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') saveName();
-                  if (e.key === 'Escape') { setEditingName(false); setNameValue(worker.name || `Worker ${worker.replicaIndex}`); }
+                  if (e.key === 'Escape') { setEditingName(false); setNameValue(worker.name || 'Worker'); }
                 }}
                 onBlur={saveName}
                 className="text-sm font-medium bg-background border border-input rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-ring w-full max-w-xs"
               />
             ) : (
               <span className="text-sm font-medium truncate">
-                {worker.name || `Worker ${worker.replicaIndex}`}
+                {worker.name || 'Worker'}
               </span>
             )}
             {!editingName && (
@@ -632,14 +667,14 @@ function WorkerRow({ worker, roles, running, onAssignRole, onRename, onUpdateTri
             placeholder="inbox, output"
             className="text-sm bg-background border border-input rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-ring font-mono"
           />
-          <p className="text-xs text-muted-foreground mt-1">Comma-separated folder names created under worker-{worker.replicaIndex}/.</p>
+          <p className="text-xs text-muted-foreground mt-1">Comma-separated folder names created under {shortId}/.</p>
         </div>
       </div>
 
       <ConfirmDialog
         open={confirmDelete}
         title="Remove worker?"
-        description={`This will remove "${worker.name || `Worker ${worker.replicaIndex}`}" from the cluster.`}
+        description={`This will remove "${worker.name || 'Worker'}" from the cluster.`}
         confirmLabel="Remove"
         onConfirm={() => {
           setConfirmDelete(false);

@@ -78,6 +78,20 @@
       "when": 1772769871930,
       "tag": "0010_striped_nomad",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1772780059046,
+      "tag": "0011_lethal_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1772782296676,
+      "tag": "0012_dizzy_wong",
+      "breakpoints": true
     }
   ]
 }
