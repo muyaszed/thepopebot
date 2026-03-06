@@ -3,7 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { PageLayout } from '../../chat/components/page-layout.js';
 import { PlusIcon, TrashIcon, PencilIcon, CopyIcon, CheckIcon } from '../../chat/components/icons.js';
-import { getCluster, renameCluster, updateClusterSystemPrompt, getClusterRoles, addClusterWorker, assignWorkerRole, renameClusterWorker, updateWorkerTriggers, removeClusterWorker } from '../actions.js';
+import {
+  getCluster, renameCluster, updateClusterSystemPrompt, updateClusterFolders,
+  getClusterRoles, addClusterWorker, assignWorkerRole, renameClusterWorker,
+  updateWorkerTriggers, updateWorkerFoldersAction, removeClusterWorker,
+  triggerWorkerManually, startCluster, stopCluster, stopWorker, getClusterStatus,
+} from '../actions.js';
 import { ConfirmDialog } from '../../chat/components/ui/confirm-dialog.js';
 
 export function ClusterPage({ session, clusterId }) {
@@ -13,6 +18,9 @@ export function ClusterPage({ session, clusterId }) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [systemPromptValue, setSystemPromptValue] = useState('');
+  const [workerStatus, setWorkerStatus] = useState({});
+  const [clusterBusy, setClusterBusy] = useState(false);
+  const [foldersValue, setFoldersValue] = useState('');
   const nameRef = useRef(null);
 
   const load = async () => {
@@ -25,6 +33,7 @@ export function ClusterPage({ session, clusterId }) {
       setRoles(allRoles);
       setNameValue(result?.name || '');
       setSystemPromptValue(result?.systemPrompt || '');
+      setFoldersValue(result?.folders ? result.folders.join(', ') : '');
     } catch (err) {
       console.error('Failed to load cluster:', err);
     } finally {
@@ -35,6 +44,21 @@ export function ClusterPage({ session, clusterId }) {
   useEffect(() => {
     load();
   }, [clusterId]);
+
+  // Status polling
+  useEffect(() => {
+    if (!cluster?.workers?.length) return;
+    let active = true;
+    const poll = async () => {
+      try {
+        const status = await getClusterStatus(clusterId);
+        if (active) setWorkerStatus(status);
+      } catch {}
+    };
+    poll();
+    const interval = setInterval(poll, 10000);
+    return () => { active = false; clearInterval(interval); };
+  }, [cluster?.workers?.length, clusterId]);
 
   useEffect(() => {
     if (editingName && nameRef.current) {
@@ -56,6 +80,15 @@ export function ClusterPage({ session, clusterId }) {
     if (systemPromptValue !== (cluster.systemPrompt || '')) {
       await updateClusterSystemPrompt(clusterId, systemPromptValue);
       setCluster((prev) => ({ ...prev, systemPrompt: systemPromptValue }));
+    }
+  };
+
+  const saveFolders = async () => {
+    const folders = foldersValue.split(',').map((s) => s.trim()).filter(Boolean);
+    const current = cluster.folders || [];
+    if (JSON.stringify(folders) !== JSON.stringify(current)) {
+      await updateClusterFolders(clusterId, folders.length ? folders : null);
+      setCluster((prev) => ({ ...prev, folders: folders.length ? folders : null }));
     }
   };
 
@@ -107,6 +140,40 @@ export function ClusterPage({ session, clusterId }) {
       workers: prev.workers.filter((w) => w.id !== workerId),
     }));
   };
+
+  const handleStartCluster = async () => {
+    setClusterBusy(true);
+    try {
+      await startCluster(clusterId);
+    } catch (err) {
+      console.error('Failed to start cluster:', err);
+    } finally {
+      setClusterBusy(false);
+      // Refresh status
+      try {
+        const status = await getClusterStatus(clusterId);
+        setWorkerStatus(status);
+      } catch {}
+    }
+  };
+
+  const handleStopCluster = async () => {
+    setClusterBusy(true);
+    try {
+      await stopCluster(clusterId);
+    } catch (err) {
+      console.error('Failed to stop cluster:', err);
+    } finally {
+      setClusterBusy(false);
+      try {
+        const status = await getClusterStatus(clusterId);
+        setWorkerStatus(status);
+      } catch {}
+    }
+  };
+
+  const runningCount = Object.values(workerStatus).filter(Boolean).length;
+  const totalCount = cluster?.workers?.length || 0;
 
   if (loading) {
     return (
@@ -170,6 +237,29 @@ export function ClusterPage({ session, clusterId }) {
         )}
       </div>
 
+      {/* Cluster Controls */}
+      {totalCount > 0 && (
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={handleStartCluster}
+            disabled={clusterBusy}
+            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+          >
+            {clusterBusy ? 'Starting...' : 'Start Cluster'}
+          </button>
+          <button
+            onClick={handleStopCluster}
+            disabled={clusterBusy}
+            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium border border-input hover:bg-muted disabled:opacity-50"
+          >
+            {clusterBusy ? 'Stopping...' : 'Stop Cluster'}
+          </button>
+          <span className="text-sm text-muted-foreground">
+            {runningCount}/{totalCount} running
+          </span>
+        </div>
+      )}
+
       {/* System Prompt */}
       <div className="mb-6">
         <label className="text-sm font-medium block mb-1">System Prompt</label>
@@ -181,6 +271,21 @@ export function ClusterPage({ session, clusterId }) {
           placeholder="Enter shared instructions for all workers..."
           rows={4}
           className="w-full text-sm bg-background border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring resize-y font-mono"
+        />
+      </div>
+
+      {/* Cluster Folders */}
+      <div className="mb-6">
+        <label className="text-sm font-medium block mb-1">Folders</label>
+        <p className="text-xs text-muted-foreground mb-2">Comma-separated folder names created under shared/ for all workers.</p>
+        <input
+          type="text"
+          value={foldersValue}
+          onChange={(e) => setFoldersValue(e.target.value)}
+          onBlur={saveFolders}
+          onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+          placeholder="inbox, output, reports"
+          className="w-full text-sm bg-background border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring font-mono"
         />
       </div>
 
@@ -220,6 +325,7 @@ export function ClusterPage({ session, clusterId }) {
                 key={worker.id}
                 worker={worker}
                 roles={roles}
+                running={!!workerStatus[worker.id]}
                 onAssignRole={handleAssignRole}
                 onRename={handleRenameWorker}
                 onUpdateTriggers={handleUpdateTriggers}
@@ -241,20 +347,23 @@ export function ClusterPage({ session, clusterId }) {
   );
 }
 
-function WorkerRow({ worker, roles, onAssignRole, onRename, onUpdateTriggers, onRemove }) {
+function WorkerRow({ worker, roles, running, onAssignRole, onRename, onUpdateTriggers, onRemove }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(worker.name || `Worker ${worker.replicaIndex}`);
+  const [runningWorker, setRunningWorker] = useState(false);
+  const [stoppingWorker, setStoppingWorker] = useState(false);
+  const [foldersValue, setFoldersValue] = useState(worker.folders ? worker.folders.join(', ') : '');
   const nameRef = useRef(null);
   const assignedRole = roles.find((r) => r.id === worker.clusterRoleId);
 
   const tc = worker.triggerConfig || {};
-  const hasCron = !!tc.cron;
-  const hasFileWatch = !!tc.file_watch;
-  const hasWebhook = !!tc.webhook;
+  const hasCron = !!(tc.cron && tc.cron.enabled);
+  const hasFileWatch = !!(tc.file_watch && tc.file_watch.enabled);
+  const hasWebhook = !!(tc.webhook && tc.webhook.enabled);
 
-  const [cronValue, setCronValue] = useState(tc.cron || '');
-  const [fileWatchValue, setFileWatchValue] = useState(tc.file_watch || '');
+  const [cronValue, setCronValue] = useState(tc.cron?.schedule || '');
+  const [fileWatchValue, setFileWatchValue] = useState(tc.file_watch?.paths || '');
 
   useEffect(() => {
     if (editingName && nameRef.current) {
@@ -273,38 +382,75 @@ function WorkerRow({ worker, roles, onAssignRole, onRename, onUpdateTriggers, on
 
   const buildConfig = (overrides) => {
     const next = { ...tc, ...overrides };
-    // Remove empty/falsy keys
-    if (!next.cron) delete next.cron;
-    if (!next.file_watch) delete next.file_watch;
-    if (!next.webhook) delete next.webhook;
+    // Remove disabled trigger keys entirely
+    if (next.cron && !next.cron.enabled) delete next.cron;
+    if (next.file_watch && !next.file_watch.enabled) delete next.file_watch;
+    if (next.webhook && !next.webhook.enabled) delete next.webhook;
     return Object.keys(next).length ? next : null;
   };
 
   const toggleTrigger = (type) => {
     if (type === 'cron') {
-      const next = hasCron ? buildConfig({ cron: '' }) : buildConfig({ cron: '*/5 * * * *' });
-      if (!hasCron) setCronValue('*/5 * * * *');
-      onUpdateTriggers(worker.id, next);
+      if (hasCron) {
+        onUpdateTriggers(worker.id, buildConfig({ cron: { enabled: false } }));
+      } else {
+        const schedule = cronValue || '*/5 * * * *';
+        if (!cronValue) setCronValue(schedule);
+        onUpdateTriggers(worker.id, buildConfig({ cron: { enabled: true, schedule } }));
+      }
     } else if (type === 'file_watch') {
-      const next = hasFileWatch ? buildConfig({ file_watch: '' }) : buildConfig({ file_watch: '/data/inbox' });
-      if (!hasFileWatch) setFileWatchValue('/data/inbox');
-      onUpdateTriggers(worker.id, next);
+      if (hasFileWatch) {
+        onUpdateTriggers(worker.id, buildConfig({ file_watch: { enabled: false } }));
+      } else {
+        const paths = fileWatchValue || '';
+        onUpdateTriggers(worker.id, buildConfig({ file_watch: { enabled: true, paths } }));
+      }
     } else if (type === 'webhook') {
-      onUpdateTriggers(worker.id, buildConfig({ webhook: !hasWebhook }));
+      onUpdateTriggers(worker.id, buildConfig({ webhook: { enabled: !hasWebhook } }));
     }
   };
 
   const saveCron = () => {
     const trimmed = cronValue.trim();
-    if (trimmed !== (tc.cron || '')) {
-      onUpdateTriggers(worker.id, buildConfig({ cron: trimmed }));
+    if (hasCron && trimmed !== (tc.cron?.schedule || '')) {
+      onUpdateTriggers(worker.id, buildConfig({ cron: { enabled: true, schedule: trimmed } }));
     }
   };
 
   const saveFileWatch = () => {
     const trimmed = fileWatchValue.trim();
-    if (trimmed !== (tc.file_watch || '')) {
-      onUpdateTriggers(worker.id, buildConfig({ file_watch: trimmed }));
+    if (hasFileWatch && trimmed !== (tc.file_watch?.paths || '')) {
+      onUpdateTriggers(worker.id, buildConfig({ file_watch: { enabled: true, paths: trimmed } }));
+    }
+  };
+
+  const saveFolders = async () => {
+    const folders = foldersValue.split(',').map((s) => s.trim()).filter(Boolean);
+    const current = worker.folders || [];
+    if (JSON.stringify(folders) !== JSON.stringify(current)) {
+      await updateWorkerFoldersAction(worker.id, folders.length ? folders : null);
+    }
+  };
+
+  const handleRun = async () => {
+    setRunningWorker(true);
+    try {
+      await triggerWorkerManually(worker.id);
+    } catch (err) {
+      console.error('Failed to trigger worker:', err);
+    } finally {
+      setRunningWorker(false);
+    }
+  };
+
+  const handleStop = async () => {
+    setStoppingWorker(true);
+    try {
+      await stopWorker(worker.id);
+    } catch (err) {
+      console.error('Failed to stop worker:', err);
+    } finally {
+      setStoppingWorker(false);
     }
   };
 
@@ -343,6 +489,14 @@ function WorkerRow({ worker, roles, onAssignRole, onRename, onUpdateTriggers, on
                 <PencilIcon size={12} />
               </button>
             )}
+            {/* Status badge */}
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              running
+                ? 'bg-green-500/15 text-green-600 dark:text-green-400'
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              {running ? 'Running' : 'Stopped'}
+            </span>
           </div>
           {assignedRole?.role && (
             <span className="text-xs text-muted-foreground mt-0.5 block truncate">
@@ -350,6 +504,24 @@ function WorkerRow({ worker, roles, onAssignRole, onRename, onUpdateTriggers, on
             </span>
           )}
         </div>
+
+        {/* Worker action buttons */}
+        <button
+          onClick={handleRun}
+          disabled={runningWorker || running}
+          className="rounded-md px-2.5 py-1.5 text-xs font-medium border border-input hover:bg-muted disabled:opacity-50 shrink-0"
+        >
+          {runningWorker ? 'Starting...' : 'Run'}
+        </button>
+        {running && (
+          <button
+            onClick={handleStop}
+            disabled={stoppingWorker}
+            className="rounded-md px-2.5 py-1.5 text-xs font-medium border border-input hover:bg-muted disabled:opacity-50 shrink-0"
+          >
+            {stoppingWorker ? 'Stopping...' : 'Stop'}
+          </button>
+        )}
 
         <select
           value={worker.clusterRoleId || ''}
@@ -428,16 +600,17 @@ function WorkerRow({ worker, roles, onAssignRole, onRename, onUpdateTriggers, on
           )}
           {hasFileWatch && (
             <div className="rounded-md border border-input p-2.5">
-              <label className="text-xs font-medium text-muted-foreground block mb-1">Watch Folders</label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Watch Paths</label>
               <input
                 type="text"
                 value={fileWatchValue}
                 onChange={(e) => setFileWatchValue(e.target.value)}
                 onBlur={saveFileWatch}
                 onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
-                placeholder="/data/inbox,/data/reports"
+                placeholder="shared/inbox, shared/reports"
                 className="text-sm bg-background border border-input rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-ring font-mono"
               />
+              <p className="text-xs text-muted-foreground mt-1">Comma-separated paths relative to cluster data dir.</p>
             </div>
           )}
           {hasWebhook && (
@@ -445,6 +618,23 @@ function WorkerRow({ worker, roles, onAssignRole, onRename, onUpdateTriggers, on
           )}
         </div>
       )}
+
+      {/* Worker Folders */}
+      <div className="mt-3">
+        <div className="rounded-md border border-input p-2.5">
+          <label className="text-xs font-medium text-muted-foreground block mb-1">Folders</label>
+          <input
+            type="text"
+            value={foldersValue}
+            onChange={(e) => setFoldersValue(e.target.value)}
+            onBlur={saveFolders}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+            placeholder="inbox, output"
+            className="text-sm bg-background border border-input rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+          />
+          <p className="text-xs text-muted-foreground mt-1">Comma-separated folder names created under worker-{worker.replicaIndex}/.</p>
+        </div>
+      </div>
 
       <ConfirmDialog
         open={confirmDelete}

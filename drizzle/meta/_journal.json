@@ -71,6 +71,13 @@
       "when": 1772678031190,
       "tag": "0009_concerned_betty_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1772769871930,
+      "tag": "0010_striped_nomad",
+      "breakpoints": true
     }
   ]
 }
