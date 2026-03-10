@@ -26,6 +26,7 @@ out/
 
 # OS files
 .DS_Store
+.gptignore
 Thumbs.db
 
 # IDE
