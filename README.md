@@ -1,9 +1,5 @@
 # ThePopeBot
 
-<a href="https://www.skool.com/ai-architects"><img src="docs/hero.png" width="100" alt="ThePopeBot" /></a>
-
-[Get priority support HERE](https://www.skool.com/ai-architects)
-
 Build autonomous AI agents that work for you 24/7, individually or in teams.
 
 ### What You Get
@@ -12,6 +8,10 @@ Build autonomous AI agents that work for you 24/7, individually or in teams.
 - **Does real work** — writes code, opens pull requests, completes multi-step tasks end to end
 - **Agent clusters** — build teams of agents that coordinate and work together on bigger jobs
 - **Full visibility** — every action is a commit you can review, approve, or undo
+
+<a href="https://www.skool.com/ai-architects"><img src="docs/hero.png" width="100" alt="ThePopeBot" /></a>
+
+[Get priority support HERE](https://www.skool.com/ai-architects)
 
 ---
 
