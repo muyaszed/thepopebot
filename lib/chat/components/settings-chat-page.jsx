@@ -781,6 +781,7 @@ export function ChatLlmPage() {
             {Object.entries(settings.builtinProviders).map(([slug, prov]) => (
               <ProviderCard
                 key={slug}
+                slug={slug}
                 name={prov.name}
                 credentials={prov.credentials}
                 credentialStatuses={settings.credentialStatuses || []}
