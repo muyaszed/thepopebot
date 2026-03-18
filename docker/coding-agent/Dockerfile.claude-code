@@ -1,0 +1,9 @@
+FROM coding-agent-base
+
+USER root
+
+RUN npm install -g @anthropic-ai/claude-code
+
+USER coding-agent
+
+ENV AGENT=claude-code

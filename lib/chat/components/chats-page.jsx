@@ -313,7 +313,7 @@ function ChatRow({ chat, onNavigate, onDelete, onStar, onRename }) {
         }
       }}
     >
-      {chat.codeWorkspaceId && chat.containerName ? <CodeIcon size={16} /> : <MessageIcon size={16} />}
+      {chat.codeWorkspaceId ? <CodeIcon size={16} /> : <MessageIcon size={16} />}
       <div className="flex-1 min-w-0">
         {editing ? (
           <input

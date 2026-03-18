@@ -1,0 +1,13 @@
+FROM coding-agent-base
+
+USER root
+
+RUN npm install -g @mariozechner/pi-coding-agent
+
+# Pi config directory (extensions/models loaded from repo at runtime)
+RUN mkdir -p /home/coding-agent/.pi/agent \
+    && chown -R coding-agent:coding-agent /home/coding-agent/.pi
+
+USER coding-agent
+
+ENV AGENT=pi
