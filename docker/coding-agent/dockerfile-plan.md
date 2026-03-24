@@ -21,10 +21,10 @@
 | **agent-job/** runtime | Done — 9 numbered scripts (setup-git, clone, auth, setup, install-skills, build-prompt, agent-run, commit-and-push, create-pr) |
 | **interactive/** runtime | Done — 7 numbered scripts (setup-git, clone, feature-branch, auth, setup, chat-context, start-interactive) |
 | **cluster-worker/** runtime | Done — 6 numbered scripts (setup-git, auth, setup, setup-logging, agent-run, finalize-logging) |
-| **command/commit/** | Done — 5 scripts (setup-git, auth, setup, git-add, agent-run) |
-| **command/push/** | Done — 6 scripts (setup-git, auth, setup, git-add, agent-run, push) |
+| **command/commit-branch/** | Done — 5 scripts (setup-git, auth, setup, git-add, agent-run) |
+| **command/push-branch/** | Done — 6 scripts (setup-git, auth, setup, git-add, agent-run, push) |
 | **command/create-pr/** | Done — 5 scripts (setup-git, auth, setup, push, agent-run). DRAFT=1 for draft PR. |
-| **command/rebase/** | Done — 2 scripts (setup-git, rebase) |
+| **command/rebase-branch/** | Done — 2 scripts (setup-git, rebase) |
 | **command/resolve-conflicts/** | Done — 4 scripts (setup-git, auth, setup, agent-run) |
 | **Settings UI** | Done — all 5 agents, enable/disable, auth mode, provider, model, credential status |
 | **Server actions** | Done — getCodingAgentSettings, updateCodingAgentConfig, setCodingAgentDefault, runWorkspaceCommand |

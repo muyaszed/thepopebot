@@ -8,10 +8,10 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { cn } from '../utils.js';
 
 export const COMMAND_LABELS = {
-  'commit': 'Commit Branch',
-  'push': 'Push Branch',
+  'commit-branch': 'Commit Branch',
+  'push-branch': 'Push Branch',
   'create-pr': 'Create PR',
-  'rebase': 'Rebase Branch',
+  'rebase-branch': 'Rebase Branch',
   'resolve-conflicts': 'Resolve Conflicts',
 };
 
@@ -307,22 +307,17 @@ function WorkspaceCommandButton({ workspaceId, diffStats, onDiffStatsRefresh, on
               </button>
             </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="end" className="whitespace-nowrap">
-            <DropdownMenuItem onClick={() => setSelectedCommand('commit')}>
-              Commit
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedCommand('push')}>
-              Push
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedCommand('create-pr')}>
-              Create PR
-            </DropdownMenuItem>
+            {['commit-branch', 'push-branch', 'create-pr'].map((cmd) => (
+              <DropdownMenuItem key={cmd} onClick={() => setSelectedCommand(cmd)}>
+                {COMMAND_LABELS[cmd]}
+              </DropdownMenuItem>
+            ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setSelectedCommand('rebase')}>
-              Rebase
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedCommand('resolve-conflicts')}>
-              Resolve Conflicts
-            </DropdownMenuItem>
+            {['rebase-branch', 'resolve-conflicts'].map((cmd) => (
+              <DropdownMenuItem key={cmd} onClick={() => setSelectedCommand(cmd)}>
+                {COMMAND_LABELS[cmd]}
+              </DropdownMenuItem>
+            ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

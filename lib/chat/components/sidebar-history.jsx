@@ -6,7 +6,7 @@ import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu } fro
 import { useChatNav } from './chat-nav-context.js';
 import { deleteChat, renameChat, starChat } from '../actions.js';
 import { cn } from '../utils.js';
-import { AgentIcon, CodeIcon } from './icons.js';
+import { AgentIcon, CodeIcon, MessageIcon } from './icons.js';
 
 
 function groupChatsByDate(chats) {

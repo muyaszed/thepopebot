@@ -863,7 +863,7 @@ function ToolbarCommandButton({ codeWorkspaceId, diffStats, onDiffStatsRefresh, 
         </div>
         {dropupOpen && (
           <div className="code-toolbar-dropup">
-            {['commit', 'push', 'create-pr'].map((cmd) => (
+            {['commit-branch', 'push-branch', 'create-pr'].map((cmd) => (
               <button
                 key={cmd}
                 className="code-toolbar-dropup-item"
@@ -873,7 +873,7 @@ function ToolbarCommandButton({ codeWorkspaceId, diffStats, onDiffStatsRefresh, 
               </button>
             ))}
             <div className="code-toolbar-dropup-separator" />
-            {['rebase', 'resolve-conflicts'].map((cmd) => (
+            {['rebase-branch', 'resolve-conflicts'].map((cmd) => (
               <button
                 key={cmd}
                 className="code-toolbar-dropup-item"
