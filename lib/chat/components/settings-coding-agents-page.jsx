@@ -860,7 +860,8 @@ function KimiCliCard({ settings, onReload }) {
   const handleProviderChange = async (e) => {
     const newProvider = e.target.value;
     const cp = settings?.customProviders?.find((p) => p.key === newProvider);
-    const newModel = cp?.models?.[0] || '';
+    const models = getAgentModels(settings, newProvider);
+    const newModel = models.length > 0 ? models[0].id : (cp?.models?.[0] || '');
     setModelText(newModel);
     await updateCodingAgentConfig('kimi-cli', { provider: newProvider, model: newModel });
     await onReload();
@@ -943,7 +944,6 @@ function KimiCliCard({ settings, onReload }) {
                       onChange={handleModelChange}
                       className="w-48 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
                     >
-                      {!customProvider && <option value="">Default</option>}
                       {providerModels.map((m) => (
                         <option key={m.id} value={m.id}>{m.name}</option>
                       ))}
