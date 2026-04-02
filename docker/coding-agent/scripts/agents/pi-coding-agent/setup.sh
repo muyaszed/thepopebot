@@ -1,6 +1,8 @@
 #!/bin/bash
 # Pi setup — write system prompt + generate models.json for custom providers
 
+source /scripts/common/build-system-prompt.sh
+
 WORKSPACE_DIR=$(pwd)
 
 # Activate playwright-cli for Pi (other agents have Playwright MCP built-in)

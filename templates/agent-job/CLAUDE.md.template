@@ -1,34 +1,57 @@
 # agent-job/ — Agent Job Configuration
 
-This directory contains configuration files for Docker agent jobs. These files are **not managed** — your changes are preserved across upgrades.
+This directory contains your agent job configuration files — system prompts, scheduling, and self-monitoring.
 
-## File Reference
+## Files
 
-### System Prompts
+- **`SOUL.md`** — Agent personality, identity, and values. Included in every agent job system prompt.
+- **`SYSTEM.md`** — Runtime environment documentation injected into the agent's context.
+- **`HEARTBEAT.md`** — Prompt for the agent's periodic heartbeat cron job.
+- **`CRONS.json`** — Scheduled job definitions, loaded at server startup.
 
-| File | Used By | Purpose |
-|------|---------|---------|
-| `SOUL.md` | Docker agent | Agent personality, identity, and values. Included in agent job system prompts. |
-| `SYSTEM.md` | Docker agent | Runtime environment documentation injected into the agent's context. |
-| `HEARTBEAT.md` | Heartbeat cron | Self-monitoring prompt for the agent's periodic heartbeat job. |
+## Editing CRONS.json
 
-### Scheduling
+`CRONS.json` is a JSON array of cron job objects. Each entry needs a `name`, `schedule` (cron expression), `type`, and `enabled` flag.
 
-| File | Purpose |
-|------|---------|
-| `CRONS.json` | Scheduled job definitions — loaded at server startup by `node-cron`. |
+There are three action types:
 
-## Template Variables
+**`agent`** — Launches a Docker agent container to execute an LLM task.
 
-Config markdown files support includes and built-in variables (processed by `render-md.js` at runtime):
+```json
+{
+  "name": "heartbeat",
+  "schedule": "*/30 * * * *",
+  "type": "agent",
+  "job": "Read agent-job/HEARTBEAT.md and complete the tasks described there.",
+  "enabled": false
+}
+```
 
-| Syntax | Description |
-|--------|-------------|
-| `{{ filepath.md }}` | Include another file (path relative to project root, recursive with circular detection) |
-| `{{datetime}}` | Current ISO timestamp |
-| `{{skills}}` | Dynamic bullet list of active skill descriptions from `skills/active/*/SKILL.md` frontmatter |
+Optional: add `"llm_provider"` and `"llm_model"` to override the default LLM for that job.
 
-## When Changes Take Effect
+**`command`** — Runs a shell command on the event handler (working directory: project root).
 
-- **Prompt files** (`.md`) — Changes take effect immediately on the next LLM call. No restart needed.
-- **CRONS.json** — Requires a server restart to reload schedules.
+```json
+{
+  "name": "ping",
+  "schedule": "*/1 * * * *",
+  "type": "command",
+  "command": "echo \"pong!\"",
+  "enabled": true
+}
+```
+
+**`webhook`** — Makes an HTTP request. `POST` (default) sends `vars` as the body; `GET` skips the body.
+
+```json
+{
+  "name": "health-check",
+  "schedule": "*/10 * * * *",
+  "type": "webhook",
+  "url": "https://example.com/health",
+  "method": "GET",
+  "enabled": false
+}
+```
+
+Optional webhook fields: `"method"` (default `POST`), `"headers"`, `"vars"`.

@@ -1,6 +1,8 @@
 #!/bin/bash
 # Gemini CLI setup — trust, auth config, session tracking hook, system prompt, Playwright MCP
 
+source /scripts/common/build-system-prompt.sh
+
 WORKSPACE_DIR=$(pwd)
 
 mkdir -p ~/.gemini

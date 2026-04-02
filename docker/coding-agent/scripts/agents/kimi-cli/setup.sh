@@ -1,6 +1,8 @@
 #!/bin/bash
 # Kimi CLI setup — session tracking hook, system prompt, Playwright MCP
 
+source /scripts/common/build-system-prompt.sh
+
 WORKSPACE_DIR=$(pwd)
 
 # Write system prompt to AGENTS.md (Kimi reads this automatically)

@@ -1,6 +1,8 @@
 #!/bin/bash
 # OpenCode setup — session tracking plugin, system prompt, Playwright MCP
 
+source /scripts/common/build-system-prompt.sh
+
 WORKSPACE_DIR=$(pwd)
 
 # Write system prompt to AGENTS.md (OpenCode reads this automatically)

@@ -1,0 +1,5 @@
+# agents/ — Custom Agent Definitions
+
+This directory holds custom agent configurations. Each subdirectory defines an agent that can be referenced by agent jobs and cron tasks.
+
+(No agents configured yet — add a subdirectory here to define one.)

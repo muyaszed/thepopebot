@@ -1,6 +1,8 @@
 #!/bin/bash
 # Claude Code setup — trust config, onboarding skip, Playwright MCP
 
+source /scripts/common/build-system-prompt.sh
+
 WORKSPACE_DIR=$(pwd)
 
 mkdir -p ~/.claude

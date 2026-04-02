@@ -1,6 +1,8 @@
 #!/bin/bash
 # Codex CLI setup — config, system prompt, session tracking hook, Playwright MCP
 
+source /scripts/common/build-system-prompt.sh
+
 WORKSPACE_DIR=$(pwd)
 
 # Write system prompt to AGENTS.md (Codex reads this automatically)

@@ -4,7 +4,7 @@
 
 Two axes, both selected at runtime:
 - **`RUNTIME`** — the workflow (agent-job, headless, interactive, cluster-worker, command/*)
-- **`AGENT`** — the coding agent (claude-code, pi-coding-agent, opencode, codex-cli, gemini-cli)
+- **`AGENT`** — the coding agent (claude-code, pi-coding-agent, opencode, codex-cli, gemini-cli, kimi-cli)
 
 Base image (`Dockerfile`) has everything shared. Per-agent images extend it:
 
@@ -14,7 +14,8 @@ coding-agent-base                    →  Ubuntu 24.04, Node.js 22, GitHub CLI, 
   ├── Dockerfile.pi-coding-agent     →  + Pi CLI,           ENV AGENT=pi-coding-agent
   ├── Dockerfile.opencode            →  + OpenCode CLI + Bun, ENV AGENT=opencode
   ├── Dockerfile.codex-cli           →  + Codex CLI,        ENV AGENT=codex-cli
-  └── Dockerfile.gemini-cli          →  + Gemini CLI,       ENV AGENT=gemini-cli
+  ├── Dockerfile.gemini-cli          →  + Gemini CLI,       ENV AGENT=gemini-cli
+  └── Dockerfile.kimi-cli            →  + Kimi CLI,         ENV AGENT=kimi-cli
 ```
 
 ## Naming Convention
@@ -308,6 +309,15 @@ The agent has a `--session-dir` flag that controls where sessions are stored.
 - On empty directory, `-c` gracefully creates a new session
 - No session ID capture or validation needed — the filesystem IS the mapping
 
+#### Pattern E: Native hooks (Kimi)
+
+The agent has a hooks system similar to Claude Code.
+
+**Kimi** — `SessionStart` hook in `~/.kimi/config.toml`:
+- Hook receives JSON on stdin with `session_id` field
+- Writes session ID to `.kimi-ttyd-sessions/${PORT}`
+- Resume flag: `--session $SESSION_ID`
+
 #### Pattern D: AfterAgent hook with file inspection (Gemini)
 
 The agent has hooks but doesn't provide the session ID in env vars or stdin.
@@ -329,6 +339,7 @@ Before passing a resume flag, validate the session still exists. If the volume w
 | pi-coding-agent | Not needed — `--session-dir` + `-c` handles it |
 | codex-cli | `find ~/.codex/sessions -name "*${SESSION_ID}*" \| grep -q .` |
 | gemini-cli | `gemini --list-sessions \| grep -qF "$SESSION_ID"` |
+| kimi-cli | `kimi session list \| grep -qF "$SESSION_ID"` |
 
 ### Headless session tracking
 
@@ -341,7 +352,7 @@ Headless `run.sh` always reads from port `7681` (the primary tab's session). Thi
 | Variable | Values | Purpose |
 |----------|--------|---------|
 | `RUNTIME` | `agent-job`, `headless`, `interactive`, `cluster-worker`, `command/*` | Selects workflow script folder |
-| `AGENT` | `claude-code`, `pi-coding-agent`, `opencode`, `codex-cli`, `gemini-cli` | Set by per-agent Dockerfile (not passed at runtime) |
+| `AGENT` | `claude-code`, `pi-coding-agent`, `opencode`, `codex-cli`, `gemini-cli`, `kimi-cli` | Set by per-agent Dockerfile (not passed at runtime) |
 
 ### Git / Repo
 
@@ -414,6 +425,7 @@ Each agent's `setup.sh` writes the prompt to wherever the agent reads it. If `$S
 | opencode | Written to `AGENTS.md` in workspace root |
 | codex-cli | Written to `AGENTS.md` in workspace root |
 | gemini-cli | Written to `~/.gemini/SYSTEM.md` + `GEMINI_SYSTEM_MD` env var |
+| kimi-cli | Written to `AGENTS.md` in workspace root |
 
 ## MCP Server Registration
 
@@ -421,8 +433,9 @@ Every agent should register Playwright MCP for browser automation. Method varies
 
 | Agent | Method |
 |-------|--------|
-| claude-code | `claude mcp add --transport stdio playwright -- npx ...` |
+| claude-code | `claude mcp add --transport stdio playwright -- npx -y @playwright/mcp@0.0.70 --headless --browser chromium` |
 | pi-coding-agent | Symlinks `playwright-cli` skill into `skills/active/` |
-| opencode | JSON config in `.opencode.json` (`mcpServers` field) |
+| opencode | JSON config in `~/.config/opencode/opencode.json` (`mcp.playwright` field) |
 | codex-cli | TOML config in `~/.codex/config.toml` (`[mcp_servers.playwright]`) |
-| gemini-cli | `gemini mcp add playwright -- npx ...` |
+| gemini-cli | `gemini mcp add playwright npx -y @playwright/mcp@0.0.70 --headless --browser chromium --trust` |
+| kimi-cli | `kimi mcp add --transport stdio -e PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers playwright -- npx -y @playwright/mcp@0.0.70 --headless --browser chromium` |

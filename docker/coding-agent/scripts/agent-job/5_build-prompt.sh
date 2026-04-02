@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build system prompt from config MD files and read job metadata
+# Set up job metadata, log directory, write system prompt audit log, and build task prompt
 
 cd /home/coding-agent/workspace
 
@@ -13,22 +13,9 @@ LOG_DIR="/home/coding-agent/workspace/logs/${AGENT_JOB_ID}"
 mkdir -p "$LOG_DIR"
 export LOG_DIR
 
-# Build system prompt from SOUL.md + SYSTEM.md
+# Write system prompt to log for audit (built by setup.sh via build-system-prompt.sh)
 SYSTEM_PROMPT_FILE="${LOG_DIR}/system-prompt.md"
-> "$SYSTEM_PROMPT_FILE"
-
-if [ -f "agent-job/SOUL.md" ]; then
-    cat "agent-job/SOUL.md" >> "$SYSTEM_PROMPT_FILE"
-    echo -e "\n\n" >> "$SYSTEM_PROMPT_FILE"
-fi
-
-if [ -f "agent-job/SYSTEM.md" ]; then
-    cat "agent-job/SYSTEM.md" >> "$SYSTEM_PROMPT_FILE"
-fi
-
-# Resolve {{datetime}} template variable
-sed -i "s/{{datetime}}/$(date -u +"%Y-%m-%dT%H:%M:%SZ")/g" "$SYSTEM_PROMPT_FILE"
-
+echo "$SYSTEM_PROMPT" > "$SYSTEM_PROMPT_FILE"
 export SYSTEM_PROMPT_FILE
 
 # Read job metadata — prefer env vars (set by event handler), fall back to config file

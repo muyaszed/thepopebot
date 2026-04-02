@@ -6,6 +6,9 @@ CLAUDE_ARGS="claude --dangerously-skip-permissions"
 if [ -n "$LLM_MODEL" ]; then
     CLAUDE_ARGS="$CLAUDE_ARGS --model $LLM_MODEL"
 fi
+if [ -n "$SYSTEM_PROMPT" ]; then
+    CLAUDE_ARGS="$CLAUDE_ARGS --append-system-prompt \"$SYSTEM_PROMPT\""
+fi
 SESSION_FILE="/home/coding-agent/.claude-ttyd-sessions/${PORT:-7681}"
 if [ "$CONTINUE_SESSION" = "1" ] && [ -f "$SESSION_FILE" ]; then
     SESSION_ID=$(cat "$SESSION_FILE")
