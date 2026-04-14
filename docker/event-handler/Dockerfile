@@ -46,5 +46,5 @@ RUN echo '{"private":true}' > package.json
 COPY --from=nextjs /app/.next ./.next
 COPY web/server.js web/next.config.mjs web/instrumentation.js web/middleware.js web/postcss.config.mjs ./
 
-EXPOSE 80
+EXPOSE 8888
 CMD ["pm2-runtime", "--kill-timeout", "120000", "server.js"]
