@@ -26,7 +26,7 @@ const ROOT = path.resolve(__dirname, '..');
 
 const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 const VERSION = pkg.version;
-const REPO = 'stephengpope/thepopebot';
+const REPO = 'muyaszed/thepopebot';
 
 // Base image built first — all coding-agent images depend on it
 const BASE_IMAGE = {
